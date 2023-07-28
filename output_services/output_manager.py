@@ -77,7 +77,7 @@ def generate_url(endpoint, is_query_params=False):
         return f"{{{camel_to_snake(key)}}}"
 
     uri = re.sub(r'{([^}]*)}', replace_with_snake, uri)
-    url = f"        uri = '{uri}'\n" + f"        uri = self.HOST + uri\n"
+    url = f"        uri = f\"{uri}\"\n" + f"        uri = self.HOST + uri\n"
     return url
 
 def initialize_class(tag, class_name, permission_required):
@@ -135,7 +135,7 @@ def generate_request(endpoint, is_request_body):
     if is_request_body:
         request_body = "json=validated_data,"
         validated_data = ", validated_data"
-    raise_request_code = f"        request.{endpoint['request_method'].lower()}(\n"
+    raise_request_code = f"        response = request.{endpoint['request_method'].lower()}(\n"
     request_content_code = f"            uri, {request_body}headers=headers)\n"
     response_status_code = f"        response.raise_for_status()\n"
     return_response_code = f"        return response{validated_data}\n"

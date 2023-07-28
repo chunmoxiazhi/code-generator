@@ -1,1 +1,10 @@
-python code_generator.py -i path/to/openapi_spec.yaml -o custom_output_directory
+Download the API documentation in Postman collection JSON format.
+
+Open a terminal or command prompt.
+
+Navigate to the project folder that contains the Code-Generator.
+
+Use the following command to execute the Code-Generator and specify the input API doc file and the output directory:
+
+
+python code_generator.py -i <path/to/api_doc> -o <path/to/out_dir>
