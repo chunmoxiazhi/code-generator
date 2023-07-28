@@ -1,0 +1,1 @@
+python code_generator.py -i path/to/openapi_spec.yaml -o custom_output_directory
