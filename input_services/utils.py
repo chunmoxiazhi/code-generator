@@ -21,10 +21,8 @@ def extract_path_parameters(request_url):
 
 def extract_request_body(item):
     request_body = ""
-    if "response" in item:
-        responses = item["response"]
-        if responses and "originalRequest" in responses[0]:
-            request_body = responses[0]["originalRequest"].get("body", {}).get("raw", "")
+    if "body" in item["request"]:
+        request_body = item["request"]["body"]["raw"]
     return request_body
 
 def extract_headers(item):

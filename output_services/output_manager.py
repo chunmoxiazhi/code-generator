@@ -28,9 +28,6 @@ def generate_imports(tag, permission_required):
         param_keys.extend([param['key'].lower() for param in query_parameters])
         param_keys.extend([param.lower() for param in path_parameters])
 
-    if any("country" in key for key in param_keys):
-        code += "from payout_partners.reference_service import get_country_by_2_letter_iso\n"
-
     if any("date" in key for key in param_keys):
         code += "from zed.utils import check_date_format\n"
         code += "from datetime import datetime\n"
@@ -139,12 +136,14 @@ def generate_request(endpoint, is_request_body):
     request_content_code = f"            uri, {request_body}headers=headers)\n"
     response_status_code = f"        response.raise_for_status()\n"
     return_response_code = f"        return response{validated_data}\n"
+    
     return raise_request_code + request_content_code + response_status_code + return_response_code
 
 def generate_code(endpoints_data):
     code_list = []
     for tag in endpoints_data:
         requests = ""
+        models = ""
         tag_name = tag.get('name')
         class_name = format_class_name(tag_name) + 'Service'
         permission_required = any(requires_permission(endpoint) for endpoint in tag.get('endpoints', []))
@@ -166,7 +165,8 @@ def generate_code(endpoints_data):
             requests += "\n" + endpoint_func_def + query_parameters + endpoint_url + headers + request_and_response
         code_list.append({
             "name": class_name_snake,
-            "code": imports + initialized_class + requests
+            "code": imports + initialized_class + requests,
+            "models": models
         })
 
     return code_list
@@ -178,8 +178,15 @@ def write_files(code_list, output_dir):
     for tag in code_list:
         class_name = tag["name"]
         code = tag["code"]
-        # Create a new .py file for each tag
-        filename = os.path.join(output_dir, f"{class_name}.py")
+        models = tag['models']
+        class_dir = os.path.join(output_dir, class_name)  # Path to the class directory under output_dir
+        os.makedirs(class_dir, exist_ok=True)  # Create the class directory
+        filename = os.path.join(class_dir, f"{class_name}.py")
         with open(filename, 'w') as file:
-          file.write(code)
-          file.write("\n\n")
+            file.write(code)
+            file.write("\n\n")
+        model_filename = os.path.join(class_dir, f"{class_name}_models.py")
+        with open(model_filename, 'w') as file:
+            file.write(models)
+            file.write("\n\n")
+            
