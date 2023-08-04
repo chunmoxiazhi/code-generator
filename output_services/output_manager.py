@@ -3,7 +3,7 @@ import re
 import json
 
 from .utils import format_file_name, format_class_name, camel_to_snake, requires_permission, \
-    replace_path_parameters
+    replace_path_parameters, format_function_name
 
 def generate_imports(tag, permission_required):
     code = "import os\n"
@@ -93,7 +93,7 @@ def initialize_class(tag, class_name, permission_required):
     return code
 
 def generate_function_definition(endpoint, is_request_body, is_path_params, is_query_params):
-    function_name = endpoint['request_method'].lower() + '_' + endpoint['name'].replace(' ', '_').lower()
+    function_name = format_function_name(endpoint)
     parameters = []
     
     if is_request_body:

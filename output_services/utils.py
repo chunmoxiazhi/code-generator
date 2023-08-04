@@ -38,3 +38,7 @@ def replace_path_parameters(uri):
             path_list[i] = "{" + camel_to_snake(path[1:]) + "}"
     
     return "/".join(path_list)
+
+def format_function_name(endpoint):
+    name_without_special_chars = re.sub(r'[^a-zA-Z\s]', '', endpoint['name'])
+    return endpoint['request_method'].lower() + '_' + name_without_special_chars.replace(' ', '_').lower()
