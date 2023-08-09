@@ -37,3 +37,20 @@ def remove_empty_tags(api_response):
     # Filter out tags with an empty list of endpoints
     filtered_tags = [tag for tag in api_response if tag['endpoints']]
     return filtered_tags
+
+def convert_to_endpoint(item):
+    query_parameters = extract_query_parameters(item["request"]["url"])
+    path_parameters = extract_path_parameters(item["request"]["url"])
+    request_body = extract_request_body(item)
+    headers = extract_headers(item)
+
+    endpoint_data = {
+        "name": item["name"],
+        "request_method": item["request"]["method"],
+        "url": item["request"]["url"].get("raw", ""),
+        "query_parameters": query_parameters,
+        "path_parameters": path_parameters,
+        "request_body": request_body,
+        "headers": headers,
+    }
+    return endpoint_data
