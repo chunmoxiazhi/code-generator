@@ -3,17 +3,14 @@ import re
 import json
 
 from .utils import format_file_name, format_class_name, camel_to_snake, requires_permission, \
-    replace_path_parameters, format_function_name
+    replace_path_parameters, format_function_name, generate_request_body_models
 
 def generate_imports(tag, permission_required):
     code = "import os\n"
     code += "from abc import ABC\n"
     code += "import requests\n"
     code += "from rest_framework.exceptions import PermissionDenied\n"
-    code += "from zed.exceptions import PayoutServiceError\n"
-
-    if permission_required:
-        code += "from mto.models import ClientPayoutPartner\n"
+    code += "from requests.exceptions import RequestException\n"
 
     param_keys = []
     for endpoint in tag.get('endpoints', []):
@@ -29,7 +26,6 @@ def generate_imports(tag, permission_required):
         param_keys.extend([param.lower() for param in path_parameters])
 
     if any("date" in key for key in param_keys):
-        code += "from zed.utils import check_date_format\n"
         code += "from datetime import datetime\n"
 
     return code
@@ -139,6 +135,14 @@ def generate_request(endpoint, is_request_body):
     
     return raise_request_code + request_content_code + response_status_code + return_response_code
 
+def generate_model(endpoint, is_request_body, is_query_params):
+    models = ""
+    if is_request_body:
+        models += generate_request_body_models(endpoint)
+    if is_query_params:
+        print(222222222)
+    return models
+
 def generate_code(endpoints_data):
     code_list = []
     for tag in endpoints_data:
@@ -163,6 +167,7 @@ def generate_code(endpoints_data):
             request_and_response = generate_request(endpoint, is_request_body)
 
             requests += "\n" + endpoint_func_def + query_parameters + endpoint_url + headers + request_and_response
+            models = generate_model(endpoint, is_request_body, is_query_params)
         code_list.append({
             "name": class_name_snake,
             "code": imports + initialized_class + requests,
