@@ -22,7 +22,12 @@ def extract_path_parameters(request_url):
 def extract_request_body(item):
     request_body = ""
     if "body" in item["request"]:
-        request_body = item["request"]["body"]["raw"]
+        request_body_str = item["request"]["body"]["raw"]
+        start_index = min(request_body_str.find('{'), request_body_str.find('['))
+        end_index = max(request_body_str.rfind('}'), request_body_str.rfind(']'))
+        
+        if start_index != -1 and end_index != -1:
+            request_body = request_body_str[start_index:end_index+1]
     return request_body
 
 def extract_headers(item):

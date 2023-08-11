@@ -3,7 +3,7 @@ import re
 import json
 
 from .utils import format_file_name, format_class_name, camel_to_snake, requires_permission, \
-    replace_path_parameters, format_function_name, generate_request_body_models
+    replace_path_parameters, format_function_name, generate_request_body_models, generate_query_parameter_models
 
 def generate_imports(tag, permission_required):
     code = "import os\n"
@@ -135,19 +135,19 @@ def generate_request(endpoint, is_request_body):
     
     return raise_request_code + request_content_code + response_status_code + return_response_code
 
-def generate_model(endpoint, is_request_body, is_query_params):
+def generate_model(endpoint, is_request_body, is_query_params, models):
     models = ""
     if is_request_body:
-        models += generate_request_body_models(endpoint)
+        models += generate_request_body_models(endpoint, models)
     if is_query_params:
-        print(222222222)
+        models += generate_query_parameter_models(endpoint, models)
     return models
 
 def generate_code(endpoints_data):
     code_list = []
     for tag in endpoints_data:
         requests = ""
-        models = ""
+        models = "from rest_framework import serializers\n"
         tag_name = tag.get('name')
         class_name = format_class_name(tag_name) + 'Service'
         permission_required = any(requires_permission(endpoint) for endpoint in tag.get('endpoints', []))
@@ -167,7 +167,8 @@ def generate_code(endpoints_data):
             request_and_response = generate_request(endpoint, is_request_body)
 
             requests += "\n" + endpoint_func_def + query_parameters + endpoint_url + headers + request_and_response
-            models = generate_model(endpoint, is_request_body, is_query_params)
+            models += generate_model(endpoint, is_request_body, is_query_params, models)
+
         code_list.append({
             "name": class_name_snake,
             "code": imports + initialized_class + requests,

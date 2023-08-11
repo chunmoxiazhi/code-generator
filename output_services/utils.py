@@ -6,16 +6,14 @@ def format_file_name(class_name):
     file_name = '_'.join(words).lower()
     return file_name
 
-
 def format_class_name(tag_name):
-    while tag_name and (not tag_name[0].isalpha()):
-        tag_name = tag_name[1:]
-
-    formatted_tag_name = ''.join(char for char in tag_name if char.isalnum() or char.isspace())
-
-    words = formatted_tag_name.split()
-    formatted_words = [word.capitalize() for word in words]
+    # Replace special characters and numbers with space
+    # Split the string by spaces
+    # Capitalize the first letter of each splitted string, then concat them into 1 string
+    cleaned_tag_name = ''.join([' ' if (not char.isalpha() and char != ' ') else char for char in tag_name])
+    formatted_words = [word.capitalize() for word in cleaned_tag_name.split()]
     class_name = ''.join(formatted_words)
+
     return class_name
 
 def camel_to_snake(camel_str):
@@ -44,9 +42,17 @@ def format_function_name(endpoint):
     name_without_special_chars = re.sub(r'[^a-zA-Z\s]', '', endpoint['name'])
     return endpoint['request_method'].lower() + '_' + name_without_special_chars.replace(' ', '_').lower()
 
-def generate_serializer(data, class_name=''):
+def generate_serializer(request_body, class_name=''):
+    # Recursive function that generates serializers
     sub_model_class_string = f"\nclass {format_class_name(class_name)}Serializer(serializers.Serializer):\n"
     sub_models = []
+    
+    data = None
+
+    if isinstance(request_body, list):
+        data = request_body[0]
+    else:
+        data = request_body
 
     for key, value in data.items():
         if isinstance(value, dict):
@@ -65,28 +71,31 @@ def generate_serializer(data, class_name=''):
 
     return sub_model_class_string, sub_models
 
-def generate_request_body_models(endpoint):
-    models = "from rest_framework import serializers\n"
+def generate_request_body_models(endpoint, models):
+    
+    request_body = json.loads(endpoint["request_body"])
+    serializer_string, sub_models = generate_serializer(request_body, endpoint["name"])
 
-    # Remove introductory line if present
-    input_string = re.sub(r'^----.*?----\s*', '', endpoint["request_body"], flags=re.DOTALL)
+    models += serializer_string
+    for sub_model in sub_models:
+        models += sub_model
 
-    # Extract JSON content from the input string
-    json_pattern = r'\{[^{}]*\}'
-    json_match = re.search(json_pattern, input_string, re.DOTALL)
+    models = models + "\n\nrequest_body_sample = " + endpoint["request_body"]
+    return models
 
-    if json_match:
-        json_content = json_match.group()
+def generate_query_parameter_models(endpoint, models):
+    models += f"\nclass {format_class_name(endpoint['name'])}QueryParameterSerializer(serializers.Serializer):\n"
 
-        # Use the extracted JSON content directly
-        request_body = json.loads(json_content)
-        serializer_string, sub_models = generate_serializer(request_body, endpoint["name"])
-
-        # Add sub-models to the models string
-        models += serializer_string
-        for sub_model in sub_models:
-            models += sub_model
-    else:
-        models += "# Error: No JSON content found\n"
-
+    for param in endpoint['query_parameters']:
+        key = param['key']
+        value = param['value']
+        
+        if 'string' in value.lower():
+            field_type = "serializers.CharField()"
+        elif 'true' in value.lower() or 'false' in value.lower():
+            field_type = "serializers.BooleanField()"
+        else:
+            field_type = f"serializers.CharField() #{value}"
+        
+        models += f"    {camel_to_snake(key)} = {field_type}\n"
     return models
