@@ -87,9 +87,6 @@ def generate_request_body_models(endpoint, models):
     
     request_body = json.loads(endpoint["request_body"])
     serializer_string, sub_models = generate_serializer(request_body, endpoint["name"])
-    print(11111111)
-    print(serializer_string)
-    print(sub_models)
     models += serializer_string
     for sub_model in sub_models:
         models += sub_model
