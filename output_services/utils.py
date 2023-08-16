@@ -42,25 +42,37 @@ def format_function_name(endpoint):
     name_without_special_chars = re.sub(r'[^a-zA-Z\s]', '', endpoint['name'])
     return endpoint['request_method'].lower() + '_' + name_without_special_chars.replace(' ', '_').lower()
 
-def generate_serializer(request_body, class_name=''):
+def generate_serializer(request_body, class_name='', is_many=False):
     # Recursive function that generates serializers
     sub_model_class_string = f"\nclass {format_class_name(class_name)}Serializer(serializers.Serializer):\n"
     sub_models = []
-    
+
+    many = ""
     data = None
 
     if isinstance(request_body, list):
+        many = "many=True"
         data = request_body[0]
     else:
         data = request_body
-
+        
     for key, value in data.items():
+        if isinstance(value, list):
+            sub_class_name = camel_to_snake(key.capitalize())
+            if isinstance(value[0], str):
+                sub_model_class_string += f"    {camel_to_snake(class_name)} = serializers.CharField(many=True)\n"
+            else:
+                sub_model_string, sub_sub_models = generate_serializer(value, sub_class_name, True)
+                sub_models.append(sub_model_string)
+                sub_models.extend(sub_sub_models)
+                sub_model_class_string += f"    {camel_to_snake(key)} = {format_class_name(sub_class_name)}Serializer({many})\n"
+            
         if isinstance(value, dict):
             sub_class_name = camel_to_snake(key.capitalize())
             sub_model_string, sub_sub_models = generate_serializer(value, sub_class_name)
             sub_models.append(sub_model_string)
             sub_models.extend(sub_sub_models)
-            sub_model_class_string += f"    {camel_to_snake(key)} = {format_class_name(sub_class_name)}Serializer()\n"
+            sub_model_class_string += f"    {camel_to_snake(key)} = {format_class_name(sub_class_name)}Serializer({many})\n"
         elif isinstance(value, int) or isinstance(value, float):
             sub_model_class_string += f"    {camel_to_snake(key)} = serializers.FloatField()\n"
         elif isinstance(value, str):
@@ -75,7 +87,9 @@ def generate_request_body_models(endpoint, models):
     
     request_body = json.loads(endpoint["request_body"])
     serializer_string, sub_models = generate_serializer(request_body, endpoint["name"])
-
+    print(11111111)
+    print(serializer_string)
+    print(sub_models)
     models += serializer_string
     for sub_model in sub_models:
         models += sub_model
