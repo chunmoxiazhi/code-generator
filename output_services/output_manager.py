@@ -140,7 +140,6 @@ def generate_model(endpoint, is_request_body, is_query_params, models):
     if is_request_body:
         models += generate_request_body_models(endpoint, models)
     if is_query_params:
-        print(111111)
         models += generate_query_parameter_models(endpoint, models)
     return models
 
