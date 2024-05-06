@@ -74,13 +74,13 @@ def generate_url(endpoint, is_query_params=False):
     return url
 
 def initialize_class(tag, class_name, permission_required):
-    permission_code = ", client_payout_partner=ClientPayoutPartner" if permission_required else ""
+    permission_code = ", permission=Permission" if permission_required else ""
     code = f"\n\nclass {class_name}(ABC):\n"
     code += f"    def __init__(self{permission_code}):\n"
     code += f"        super().__init__()\n"
 
     if permission_required:
-        code += f"        api_keys = client_payout_partner.api_keys if client_payout_partner else None\n"
+        code += f"        api_keys = permission.api_keys if permission else None\n"
         code += f"        if not api_keys or not api_keys.get('api_key', None) or not api_keys.get('secret', None):\n"
         code += f'            raise PermissionDenied("Your account has not been yet configure to perform {class_name} API operations")\n'
     return code
@@ -116,7 +116,7 @@ def generate_headers(endpoint):
         value = header['value']
 
         if any(keyword in key.lower() for keyword in ['auth', 'access', 'token']):
-            formatted_headers += f"            '{key}': 'Bear token', #pull token from Zed\n"
+            formatted_headers += f"            '{key}': 'Bear token'\n"
         else:
             formatted_headers += f"            '{key}': '{value}',\n"
 
